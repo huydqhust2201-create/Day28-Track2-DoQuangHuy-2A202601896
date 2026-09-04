@@ -199,7 +199,7 @@ def lab28_ingestion_pipeline() -> None:
 
         return {**export.to_dict(), "materialized": materialized}
 
-    @task(outlets=[VECTORS_ASSET])
+    @task(outlets=[VECTORS_ASSET], execution_timeout=timedelta(minutes=3))
     def index_new_documents(batch: dict[str, Any]) -> dict[str, Any]:
         """Embed the documents this batch merged and upsert them into Qdrant.
 
