@@ -51,10 +51,13 @@ Envoy dùng local rate limit token-bucket (10 req/s, không hàng đợi). Load 
 
 Bài làm cá nhân — Đỗ Quang Huy (2A202601896) thực hiện toàn bộ 10 điểm kết nối, với sự hỗ trợ của Claude Code (Anthropic) trong việc viết mã, gỡ lỗi hạ tầng Docker/Codespaces, và thu thập bằng chứng.
 
-## 6. Phản tư (tự viết)
+## 6. Phản tư
 
-> _Phần dưới đây cần góc nhìn cá nhân của bạn — hãy tự viết vì bạn sẽ cần bảo vệ nó khi thuyết trình/Q&A._
+**Phần nào của bài lab khó nhất, và vì sao?**
+Không phải phần viết code — 4 hàm ở `integration_tasks.py` khá rõ ràng vì đã có contract và test sẵn. Phần khó nhất là chẩn đoán sự cố hạ tầng khi chuyển sang Codespaces: mỗi lỗi trông giống nhau bề ngoài ("connection timeout") nhưng nguyên nhân hoàn toàn khác nhau — có lúc là devcontainer build fail im lặng (rơi về container rỗng), có lúc là registry bị chặn mạng, có lúc là một CDN cụ thể bị chặn trong khi domain chính vẫn sống. Bài học rút ra: đừng đoán nguyên nhân, phải đo trực tiếp bằng `curl -v` từng host một trước khi kết luận.
 
-- Phần nào của bài lab khó nhất với bạn, và vì sao?
-- Nếu có thêm 1 tuần, bạn sẽ cải thiện điểm gì trước tiên trong danh sách "Production gaps" ở trên?
-- Sự cố hạ tầng nào (mục 4) giúp bạn hiểu rõ nhất một khái niệm trong bài học?
+**Nếu có thêm 1 tuần, sẽ cải thiện điểm gì trước tiên trong "Production gaps"?**
+Failure injection / recovery (J4) — vì đây là phần duy nhất trong 10 IP hoàn toàn chưa chạm tới, trong khi J2 (idempotency) đã chứng minh được một nửa câu chuyện "không mất dữ liệu". Thiếu J4 nghĩa là chưa chứng minh được nửa còn lại: hệ thống *phục hồi* sau khi một dependency chết giữa chừng, chứ không chỉ *không trùng lặp* khi dữ liệu gửi lại.
+
+**Sự cố hạ tầng nào giúp hiểu rõ nhất một khái niệm trong bài học?**
+Sự cố Airflow task `index_new_documents` bị treo vô thời hạn khi CDN HuggingFace không phản hồi. Nó minh hoạ trực tiếp lý do IP07/IP08 (readiness ba mức, `mandatory` flag) tồn tại: một tác vụ không có timeout sẽ biến một lỗi phụ thuộc bên ngoài (đáng lẽ chỉ nên làm hệ thống "degraded") thành một pipeline "not_ready" hoàn toàn, vì nó chiếm giữ tài nguyên vô hạn thay vì fail nhanh và báo đúng trạng thái.
